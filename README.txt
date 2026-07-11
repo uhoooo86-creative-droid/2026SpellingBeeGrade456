@@ -1,4 +1,4 @@
-4·5·6학년 통합 Spelling Bee 앱
+중대부초 4·5·6학년 통합 Spelling Bee 앱
 
 학년 선택
 - 4학년: 노란색
