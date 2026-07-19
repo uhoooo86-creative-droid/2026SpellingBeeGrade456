@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>4·5·6학년 Spelling Bee</title>
+<style>
+:root{--y:#ffd84d;--b:#e0aa00;--grade:#e9b900;--g:#39c98a;--r:#ff6577;--ink:#263247;--muted:#6c7585}
+*{box-sizing:border-box} body{margin:0;font-family:system-ui,"Pretendard",sans-serif;color:var(--ink);
+background:linear-gradient(135deg,var(--bg1,#fff9dc),var(--bg2,#fffdf2));min-height:100vh}
+.app{max-width:1050px;margin:auto;padding:22px}.head{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.logo{font-size:46px}.head h1{margin:0;font-size:34px}.head p{margin:4px 0 0;color:var(--muted);font-weight:700}
+.grade-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.grade-btn{border:0;border-radius:18px;padding:16px;background:#fff;font-weight:1000;font-size:18px;color:var(--muted);box-shadow:0 6px 18px #0001;cursor:pointer}
+.grade-btn.active{background:var(--grade);color:#fff;transform:translateY(-2px)}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.tab{border:0;border-radius:16px;padding:15px 10px;background:#fff;font-weight:900;color:var(--muted);box-shadow:0 6px 18px #0001}
+.tab.active{background:var(--ink);color:#fff}
+.layout{display:grid;grid-template-columns:1.5fr .7fr;gap:16px}
+.card{background:#fff;border-radius:26px;box-shadow:0 16px 45px #0002}
+.main{min-height:560px;padding:28px;display:flex;flex-direction:column}.side{padding:22px;height:max-content}
+.top{display:flex;justify-content:space-between;font-weight:900;color:var(--muted)}.meter{height:10px;background:#edf0f4;border-radius:99px;margin:14px 0;overflow:hidden}
+.meter div{height:100%;width:0;background:linear-gradient(90deg,var(--y),var(--g));transition:.3s}
+.stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:18px}
+.bee{font-size:74px}.prompt{font-size:25px;font-weight:950}.word{font-size:clamp(40px,8vw,76px);font-weight:1000;letter-spacing:.04em}
+.spelling{font-size:clamp(24px,5vw,43px);font-weight:1000;color:var(--b);letter-spacing:.12em}.count{font-size:120px;font-weight:1000;color:var(--r)}
+.answer{width:min(500px,100%);padding:17px;border:3px solid #dfe5ed;border-radius:17px;text-align:center;font-size:28px;font-weight:900;outline:none}
+.answer:focus{border-color:var(--b)}.result{min-height:32px;font-size:21px;font-weight:950}.hint{color:var(--muted);font-weight:700}
+.controls{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}.player{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;padding:12px 14px;background:#f7f9fc;border-radius:18px}.player .btn{min-width:52px}.btn{border:0;border-radius:15px;padding:13px 18px;font-weight:950;cursor:pointer}
+.primary{background:var(--y)}.blue{background:var(--b);color:#fff}.green{background:var(--g);color:#fff}.ghost{background:#f1f3f6}.red{background:var(--r);color:#fff}
+label{display:block;font-size:13px;font-weight:900;color:var(--muted);margin:14px 0 7px}select,input[type=number]{width:100%;padding:11px;border:1px solid #ddd;border-radius:12px;font-weight:800}
+.check{display:flex;gap:8px;align-items:center;margin-top:14px;font-weight:800}.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}
+.stat{background:#f6f7f9;border-radius:15px;padding:13px;text-align:center}.stat b{font-size:25px;display:block}.hidden{display:none!important}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.side{order:-1}.tabs,.grade-tabs{grid-template-columns:1fr}.main{min-height:500px}.head h1{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="head"><div class="logo">🐝</div><div><h1><span id="gradeTitle">4학년</span> Spelling Bee</h1><p>4·5·6학년 통합 · 50·100·200단어 자동 연속 재생</p></div></div>
+  <div class="grade-tabs">
+    <button class="grade-btn active" data-grade="4">🟡 4학년</button>
+    <button class="grade-btn" data-grade="5">🔵 5학년</button>
+    <button class="grade-btn" data-grade="6">🟣 6학년</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-mode="listenSpell">① 단어 + 스펠링 듣기</button>
+    <button class="tab" data-mode="delayReveal">② 6초 뒤 정답 보기</button>
+    <button class="tab" data-mode="typing">③ 정답 타이핑</button>
+  </div>
+
+  <div class="layout">
+    <section class="card main">
+      <div class="top"><span id="level">BASIC WORD</span><span id="progress">1 / 20</span></div>
+      <div class="meter"><div id="bar"></div></div>
+      <div class="stage">
+        <div class="bee">🐝</div>
+        <div id="prompt" class="prompt"></div>
+        <div id="count" class="count hidden">6</div>
+        <div id="word" class="word"></div>
+        <div id="spelling" class="spelling hidden"></div>
+        <input id="answer" class="answer hidden" autocomplete="off" spellcheck="false" placeholder="정답을 입력하세요">
+        <div id="result" class="result"></div>
+        <div id="hint" class="hint"></div>
+        <div class="player">
+          <button id="prev" class="btn ghost" title="이전 단어">⏮</button>
+          <button id="playPause" class="btn primary" title="재생/일시정지">▶️ 재생</button>
+          <button id="nextPlayer" class="btn ghost" title="다음 단어">⏭</button>
+          <button id="repeatOne" class="btn ghost" title="현재 단어 반복">🔁 반복</button>
+        </div>
+        <div class="controls">
+          <button id="listen" class="btn primary">🔊 다시 듣기</button>
+          <button id="spellBtn" class="btn blue">🔤 스펠링 듣기</button>
+          <button id="check" class="btn green hidden">정답 확인</button>
+          <button id="next" class="btn ghost">다음 단어 →</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="card side">
+      <h3>훈련 설정</h3>
+      <label>단어 범위</label>
+      <select id="range">
+        <option value="1-50">1–50</option><option value="51-100">51–100</option>
+        <option value="101-150">101–150</option><option value="151-200">151–200</option>
+        <option value="201-250">Challenge 201–250</option><option value="251-300">Challenge 251–300</option>
+        <option value="1-300" selected>전체 1–300</option>
+      </select>
+      <label>문제 수</label>
+      <select id="countSel"><option selected>50</option><option>100</option><option>200</option><option>300</option></select>
+      <label>목소리</label><select id="voice"><option>불러오는 중...</option></select>
+      <label>속도</label>
+      <select id="rate"><option value=".72">느리게</option><option value=".9" selected>보통</option><option value="1.08">빠르게</option></select>
+      <div class="check"><input id="randomVoice" type="checkbox" checked><span>문제마다 다른 목소리</span></div>
+      <div class="check"><input id="shuffle" type="checkbox" checked><span>단어 순서 섞기</span></div><div class="check"><input id="autoPlay" type="checkbox" checked><span>듣기 모드 자동으로 다음 단어</span></div>
+      <button id="restart" class="btn red" style="width:100%;margin-top:16px">↻ 새 훈련 시작</button>
+      <div class="stats">
+        <div class="stat"><b id="score">0</b><span>정답</span></div>
+        <div class="stat"><b id="acc">0%</b><span>정확도</span></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+const DATA={"4":[{"id":1,"word":"activity"},{"id":2,"word":"alone"},{"id":3,"word":"amazed"},{"id":4,"word":"ancient"},{"id":5,"word":"appear"},{"id":6,"word":"army"},{"id":7,"word":"asleep"},{"id":8,"word":"assignment"},{"id":9,"word":"astronaut"},{"id":10,"word":"attach"},{"id":11,"word":"author"},{"id":12,"word":"avoid"},{"id":13,"word":"behave"},{"id":14,"word":"believe"},{"id":15,"word":"belong"},{"id":16,"word":"biologist"},{"id":17,"word":"blanket"},{"id":18,"word":"brain"},{"id":19,"word":"breath"},{"id":20,"word":"bridge"},{"id":21,"word":"brssoth"},{"id":22,"word":"cafeteria"},{"id":23,"word":"capital"},{"id":24,"word":"castle"},{"id":25,"word":"celebrate"},{"id":26,"word":"cheap"},{"id":27,"word":"choice"},{"id":28,"word":"chopsticks"},{"id":29,"word":"cliff"},{"id":30,"word":"minutes"},{"id":31,"word":"colorful"},{"id":32,"word":"comfortable"},{"id":33,"word":"common"},{"id":34,"word":"communicate"},{"id":35,"word":"complain"},{"id":36,"word":"complete"},{"id":37,"word":"concept"},{"id":38,"word":"condition"},{"id":39,"word":"confirm"},{"id":40,"word":"convenient"},{"id":41,"word":"cottage"},{"id":42,"word":"crater"},{"id":43,"word":"credit"},{"id":44,"word":"critical"},{"id":45,"word":"crow"},{"id":46,"word":"culture"},{"id":47,"word":"curtain"},{"id":48,"word":"damage"},{"id":49,"word":"dangerous"},{"id":50,"word":"defend"},{"id":51,"word":"delicious"},{"id":52,"word":"deliver"},{"id":53,"word":"detail"},{"id":54,"word":"direction"},{"id":55,"word":"discover"},{"id":56,"word":"distance"},{"id":57,"word":"dough"},{"id":58,"word":"drummer"},{"id":59,"word":"dumpling"},{"id":60,"word":"dusty"},{"id":61,"word":"earth"},{"id":62,"word":"effect"},{"id":63,"word":"electricity"},{"id":64,"word":"embarrassed"},{"id":65,"word":"enemy"},{"id":66,"word":"engineer"},{"id":67,"word":"example"},{"id":68,"word":"exercise"},{"id":69,"word":"expensive"},{"id":70,"word":"explore"},{"id":71,"word":"express"},{"id":72,"word":"extra"},{"id":73,"word":"extreme"},{"id":74,"word":"factory"},{"id":75,"word":"fair"},{"id":76,"word":"feeling"},{"id":77,"word":"fewer"},{"id":78,"word":"fiction"},{"id":79,"word":"forgive"},{"id":80,"word":"fridge"},{"id":81,"word":"friendly"},{"id":82,"word":"friendship"},{"id":83,"word":"furniture"},{"id":84,"word":"guest"},{"id":85,"word":"guide"},{"id":86,"word":"happen"},{"id":87,"word":"harmful"},{"id":88,"word":"healthy"},{"id":89,"word":"herd"},{"id":90,"word":"human"},{"id":91,"word":"humpback"},{"id":92,"word":"imperfect"},{"id":93,"word":"impossible"},{"id":94,"word":"ingredient"},{"id":95,"word":"inspire"},{"id":96,"word":"instead"},{"id":97,"word":"interested"},{"id":98,"word":"invention"},{"id":99,"word":"island"},{"id":100,"word":"jewelry"},{"id":101,"word":"journal"},{"id":102,"word":"journey"},{"id":103,"word":"landfill"},{"id":104,"word":"legend"},{"id":105,"word":"location"},{"id":106,"word":"magazine"},{"id":107,"word":"meal"},{"id":108,"word":"meerkat"},{"id":109,"word":"message"},{"id":110,"word":"microscope"},{"id":111,"word":"minute"},{"id":112,"word":"mood"},{"id":113,"word":"mural"},{"id":114,"word":"muscle"},{"id":115,"word":"native"},{"id":116,"word":"necessary"},{"id":117,"word":"nervous"},{"id":118,"word":"notice"},{"id":119,"word":"observe"},{"id":120,"word":"opinion"},{"id":121,"word":"opposite"},{"id":122,"word":"owner"},{"id":123,"word":"paintbrush"},{"id":124,"word":"painter"},{"id":125,"word":"patient"},{"id":126,"word":"peaceful"},{"id":127,"word":"period"},{"id":128,"word":"planet"},{"id":129,"word":"plastic"},{"id":130,"word":"polite"},{"id":131,"word":"popular"},{"id":132,"word":"porch"},{"id":133,"word":"powerful"},{"id":134,"word":"price"},{"id":135,"word":"pride"},{"id":136,"word":"project"},{"id":137,"word":"promise"},{"id":138,"word":"protect"},{"id":139,"word":"proud"},{"id":140,"word":"purpose"},{"id":141,"word":"purr"},{"id":142,"word":"pyramid"},{"id":143,"word":"quotation"},{"id":144,"word":"reach"},{"id":145,"word":"react"},{"id":146,"word":"realize"},{"id":147,"word":"reason"},{"id":148,"word":"recipe"},{"id":149,"word":"regret"},{"id":150,"word":"relax"},{"id":151,"word":"remember"},{"id":152,"word":"reply"},{"id":153,"word":"reuse"},{"id":154,"word":"rhyme"},{"id":155,"word":"rumble"},{"id":156,"word":"scientist"},{"id":157,"word":"scream"},{"id":158,"word":"secret"},{"id":159,"word":"seem"},{"id":160,"word":"separate"},{"id":161,"word":"shocked"},{"id":162,"word":"signal"},{"id":163,"word":"similar"},{"id":164,"word":"situation"},{"id":165,"word":"slither"},{"id":166,"word":"society"},{"id":167,"word":"spaceship"},{"id":168,"word":"spacesuit"},{"id":169,"word":"spend"},{"id":170,"word":"spice"},{"id":171,"word":"statue"},{"id":172,"word":"steamer"},{"id":173,"word":"strategy"},{"id":174,"word":"stream"},{"id":175,"word":"stripe"},{"id":176,"word":"style"},{"id":177,"word":"support"},{"id":178,"word":"surprise"},{"id":179,"word":"sweatshirt"},{"id":180,"word":"sweaty"},{"id":181,"word":"technology"},{"id":182,"word":"telescope"},{"id":183,"word":"terrible"},{"id":184,"word":"together"},{"id":185,"word":"tour"},{"id":186,"word":"trailblazer"},{"id":187,"word":"treasure"},{"id":188,"word":"tunnel"},{"id":189,"word":"turbine"},{"id":190,"word":"underground"},{"id":191,"word":"unwrap"},{"id":192,"word":"useful"},{"id":193,"word":"valley"},{"id":194,"word":"vehicle"},{"id":195,"word":"village"},{"id":196,"word":"voice"},{"id":197,"word":"volcano"},{"id":198,"word":"while"},{"id":199,"word":"wonderful"},{"id":200,"word":"yawn"},{"id":201,"word":"abbreviation"},{"id":202,"word":"adjective"},{"id":203,"word":"adventure"},{"id":204,"word":"advertisement"},{"id":205,"word":"affect"},{"id":206,"word":"against"},{"id":207,"word":"alphabet"},{"id":208,"word":"antonym"},{"id":209,"word":"argument"},{"id":210,"word":"attention"},{"id":211,"word":"average"},{"id":212,"word":"awareness"},{"id":213,"word":"background"},{"id":214,"word":"behavior"},{"id":215,"word":"benefit"},{"id":216,"word":"biomimicry"},{"id":217,"word":"celebration"},{"id":218,"word":"certain"},{"id":219,"word":"characteristic"},{"id":220,"word":"chemical"},{"id":221,"word":"community"},{"id":222,"word":"compare"},{"id":223,"word":"competition"},{"id":224,"word":"compost"},{"id":225,"word":"confident"},{"id":226,"word":"confusion"},{"id":227,"word":"contrast"},{"id":228,"word":"conversation"},{"id":229,"word":"create"},{"id":230,"word":"decision"},{"id":231,"word":"describe"},{"id":232,"word":"device"},{"id":233,"word":"disappear"},{"id":234,"word":"disconnect"},{"id":235,"word":"efficient"},{"id":236,"word":"electronic"},{"id":237,"word":"entrance"},{"id":238,"word":"envelope"},{"id":239,"word":"environment"},{"id":240,"word":"equipment"},{"id":241,"word":"especially"},{"id":242,"word":"exactly"},{"id":243,"word":"experience"},{"id":244,"word":"experiment"},{"id":245,"word":"expression"},{"id":246,"word":"familiar"},{"id":247,"word":"fortunately"},{"id":248,"word":"frequently"},{"id":249,"word":"gesture"},{"id":250,"word":"greenery"},{"id":251,"word":"habitable"},{"id":252,"word":"height"},{"id":253,"word":"hieroglyphics"},{"id":254,"word":"identify"},{"id":255,"word":"immediately"},{"id":256,"word":"include"},{"id":257,"word":"incorrectly"},{"id":258,"word":"incredible"},{"id":259,"word":"inference"},{"id":260,"word":"information"},{"id":261,"word":"instrument"},{"id":262,"word":"invitation"},{"id":263,"word":"language"},{"id":264,"word":"launch"},{"id":265,"word":"material"},{"id":266,"word":"misunderstanding"},{"id":267,"word":"nervousness"},{"id":268,"word":"nomadic"},{"id":269,"word":"observatory"},{"id":270,"word":"ordinary"},{"id":271,"word":"paraphrase"},{"id":272,"word":"passive"},{"id":273,"word":"perhaps"},{"id":274,"word":"persuade"},{"id":275,"word":"piece"},{"id":276,"word":"prefix"},{"id":277,"word":"prepare"},{"id":278,"word":"presentation"},{"id":279,"word":"probably"},{"id":280,"word":"professor"},{"id":281,"word":"pronounce"},{"id":282,"word":"quickly"},{"id":283,"word":"reduce"},{"id":284,"word":"relationship"},{"id":285,"word":"restaurant"},{"id":286,"word":"rhythm"},{"id":287,"word":"sandstorm"},{"id":288,"word":"sculpture"},{"id":289,"word":"sentence"},{"id":290,"word":"sequence"},{"id":291,"word":"structure"},{"id":292,"word":"suggest"},{"id":293,"word":"survive"},{"id":294,"word":"temperature"},{"id":295,"word":"tortoise"},{"id":296,"word":"tourist"},{"id":297,"word":"traditional"},{"id":298,"word":"university"},{"id":299,"word":"valuable"},{"id":300,"word":"vegetable"}],"5":[{"id":1,"word":"ability"},{"id":2,"word":"abstract"},{"id":3,"word":"accent"},{"id":4,"word":"actually"},{"id":5,"word":"addition"},{"id":6,"word":"advantage"},{"id":7,"word":"alert"},{"id":8,"word":"algae"},{"id":9,"word":"algorithm"},{"id":10,"word":"ambitious"},{"id":11,"word":"amphibian"},{"id":12,"word":"analyze"},{"id":13,"word":"ancestor"},{"id":14,"word":"annoyed"},{"id":15,"word":"anxious"},{"id":16,"word":"approach"},{"id":17,"word":"arctic"},{"id":18,"word":"assure"},{"id":19,"word":"attitude"},{"id":20,"word":"available"},{"id":21,"word":"average"},{"id":22,"word":"batter"},{"id":23,"word":"belief"},{"id":24,"word":"benefit"},{"id":25,"word":"blobfish"},{"id":26,"word":"brilliant"},{"id":27,"word":"bronze"},{"id":28,"word":"cautious"},{"id":29,"word":"century"},{"id":30,"word":"chorus"},{"id":31,"word":"celebrate"},{"id":32,"word":"climate"},{"id":33,"word":"coast"},{"id":34,"word":"collapse"},{"id":35,"word":"comedian"},{"id":36,"word":"comfortable"},{"id":37,"word":"communication"},{"id":38,"word":"community"},{"id":39,"word":"companion"},{"id":40,"word":"competitive"},{"id":41,"word":"complaint"},{"id":42,"word":"complex"},{"id":43,"word":"complicated"},{"id":44,"word":"concerned"},{"id":45,"word":"confidence"},{"id":46,"word":"confused"},{"id":47,"word":"connection"},{"id":48,"word":"construct"},{"id":49,"word":"context"},{"id":50,"word":"continent"},{"id":51,"word":"continue"},{"id":52,"word":"contribution"},{"id":53,"word":"controversial"},{"id":54,"word":"convincing"},{"id":55,"word":"creation"},{"id":56,"word":"creativity"},{"id":57,"word":"critical"},{"id":58,"word":"currency"},{"id":59,"word":"damage"},{"id":60,"word":"defensive"},{"id":61,"word":"delicate"},{"id":62,"word":"deserve"},{"id":63,"word":"despite"},{"id":64,"word":"developer"},{"id":65,"word":"device"},{"id":66,"word":"difficult"},{"id":67,"word":"dinosaur"},{"id":68,"word":"direction"},{"id":69,"word":"disappear"},{"id":70,"word":"discovery"},{"id":71,"word":"echo"},{"id":72,"word":"eclipse"},{"id":73,"word":"ecosystem"},{"id":74,"word":"engage"},{"id":75,"word":"enormous"},{"id":76,"word":"enough"},{"id":77,"word":"environment"},{"id":78,"word":"episode"},{"id":79,"word":"exactly"},{"id":80,"word":"except"},{"id":81,"word":"exchange"},{"id":82,"word":"excitement"},{"id":83,"word":"experiment"},{"id":84,"word":"expert"},{"id":85,"word":"extinct"},{"id":86,"word":"fantasy"},{"id":87,"word":"flexible"},{"id":88,"word":"float"},{"id":89,"word":"focused"},{"id":90,"word":"forceful"},{"id":91,"word":"foundation"},{"id":92,"word":"fret"},{"id":93,"word":"generous"},{"id":94,"word":"genre"},{"id":95,"word":"grateful"},{"id":96,"word":"grip"},{"id":97,"word":"groan"},{"id":98,"word":"harvest"},{"id":99,"word":"heartbeat"},{"id":100,"word":"height"},{"id":101,"word":"hopeful"},{"id":102,"word":"humble"},{"id":103,"word":"hybrid"},{"id":104,"word":"ignore"},{"id":105,"word":"illusion"},{"id":106,"word":"impatient"},{"id":107,"word":"increase"},{"id":108,"word":"incredible"},{"id":109,"word":"indefinite"},{"id":110,"word":"inflation"},{"id":111,"word":"insecure"},{"id":112,"word":"inspiring"},{"id":113,"word":"instead"},{"id":114,"word":"inventor"},{"id":115,"word":"isolated"},{"id":116,"word":"karate"},{"id":117,"word":"landscape"},{"id":118,"word":"larvae"},{"id":119,"word":"launch"},{"id":120,"word":"listener"},{"id":121,"word":"locally"},{"id":122,"word":"location"},{"id":123,"word":"luckily"},{"id":124,"word":"lyrics"},{"id":125,"word":"material"},{"id":126,"word":"mechanical"},{"id":127,"word":"moment"},{"id":128,"word":"mumble"},{"id":129,"word":"nerve"},{"id":130,"word":"obvious"},{"id":131,"word":"opinion"},{"id":132,"word":"opportunity"},{"id":133,"word":"opposite"},{"id":134,"word":"option"},{"id":135,"word":"ordinary"},{"id":136,"word":"organic"},{"id":137,"word":"original"},{"id":138,"word":"overhear"},{"id":139,"word":"overjoyed"},{"id":140,"word":"overthink"},{"id":141,"word":"oxygen"},{"id":142,"word":"particular"},{"id":143,"word":"patience"},{"id":144,"word":"pattern"},{"id":145,"word":"persuade"},{"id":146,"word":"physical"},{"id":147,"word":"pitcher"},{"id":148,"word":"planet"},{"id":149,"word":"pollute"},{"id":150,"word":"population"},{"id":151,"word":"practical"},{"id":152,"word":"predict"},{"id":153,"word":"pretend"},{"id":154,"word":"previously"},{"id":155,"word":"probably"},{"id":156,"word":"process"},{"id":157,"word":"protect"},{"id":158,"word":"recognize"},{"id":159,"word":"recording"},{"id":160,"word":"reflection"},{"id":161,"word":"region"},{"id":162,"word":"relaxed"},{"id":163,"word":"researcher"},{"id":164,"word":"respond"},{"id":165,"word":"rhyme"},{"id":166,"word":"routine"},{"id":167,"word":"secure"},{"id":168,"word":"shipwreck"},{"id":169,"word":"shiver"},{"id":170,"word":"shutter"},{"id":171,"word":"sigh"},{"id":172,"word":"situation"},{"id":173,"word":"slightly"},{"id":174,"word":"software"},{"id":175,"word":"solution"},{"id":176,"word":"species"},{"id":177,"word":"sponge"},{"id":178,"word":"stable"},{"id":179,"word":"stationary"},{"id":180,"word":"struggle"},{"id":181,"word":"successful"},{"id":182,"word":"surround"},{"id":183,"word":"sweaty"},{"id":184,"word":"taxidermist"},{"id":185,"word":"technique"},{"id":186,"word":"thunderstorm"},{"id":187,"word":"tracksuit"},{"id":188,"word":"transfer"},{"id":189,"word":"treadmill"},{"id":190,"word":"uncomfortable"},{"id":191,"word":"uninterested"},{"id":192,"word":"unique"},{"id":193,"word":"valuable"},{"id":194,"word":"vanish"},{"id":195,"word":"wealthy"},{"id":196,"word":"whether"},{"id":197,"word":"wildlife"},{"id":198,"word":"window"},{"id":199,"word":"without"},{"id":200,"word":"scientist"},{"id":201,"word":"abbreviation"},{"id":202,"word":"accidentally"},{"id":203,"word":"administration"},{"id":204,"word":"aeronautics"},{"id":205,"word":"affordable"},{"id":206,"word":"anxiety"},{"id":207,"word":"appreciate"},{"id":208,"word":"archaeologist"},{"id":209,"word":"architect"},{"id":210,"word":"assistant"},{"id":211,"word":"attractive"},{"id":212,"word":"biologist"},{"id":213,"word":"campaign"},{"id":214,"word":"canyon"},{"id":215,"word":"chemical"},{"id":216,"word":"choreography"},{"id":217,"word":"characteristic"},{"id":218,"word":"circulation"},{"id":219,"word":"combination"},{"id":220,"word":"command"},{"id":221,"word":"competition"},{"id":222,"word":"complete"},{"id":223,"word":"concentrate"},{"id":224,"word":"concrete"},{"id":225,"word":"consideration"},{"id":226,"word":"constant"},{"id":227,"word":"convenient"},{"id":228,"word":"decision"},{"id":229,"word":"deforestation"},{"id":230,"word":"determination"},{"id":231,"word":"disappointment"},{"id":232,"word":"doubt"},{"id":233,"word":"earthquake"},{"id":234,"word":"electricity"},{"id":235,"word":"embarrassed"},{"id":236,"word":"embarrassment"},{"id":237,"word":"emergency"},{"id":238,"word":"environmental"},{"id":239,"word":"equipment"},{"id":240,"word":"especially"},{"id":241,"word":"eventually"},{"id":242,"word":"exercise"},{"id":243,"word":"exhausted"},{"id":244,"word":"expedition"},{"id":245,"word":"familiar"},{"id":246,"word":"fascinated"},{"id":247,"word":"frightening"},{"id":248,"word":"frustrated"},{"id":249,"word":"further"},{"id":250,"word":"generate"},{"id":251,"word":"gesture"},{"id":252,"word":"growth"},{"id":253,"word":"imagination"},{"id":254,"word":"impossible"},{"id":255,"word":"improvement"},{"id":256,"word":"incredibly"},{"id":257,"word":"independent"},{"id":258,"word":"instructions"},{"id":259,"word":"intelligent"},{"id":260,"word":"interrupt"},{"id":261,"word":"interviewer"},{"id":262,"word":"investigate"},{"id":263,"word":"journey"},{"id":264,"word":"laboratory"},{"id":265,"word":"linguist"},{"id":266,"word":"loyalty"},{"id":267,"word":"magnificent"},{"id":268,"word":"mammoth"},{"id":269,"word":"marine"},{"id":270,"word":"marvelous"},{"id":271,"word":"mechanism"},{"id":272,"word":"mosquito"},{"id":273,"word":"neighbor"},{"id":274,"word":"personality"},{"id":275,"word":"persuasion"},{"id":276,"word":"philosopher"},{"id":277,"word":"pollinate"},{"id":278,"word":"precise"},{"id":279,"word":"prediction"},{"id":280,"word":"presentation"},{"id":281,"word":"professional"},{"id":282,"word":"purchase"},{"id":283,"word":"quality"},{"id":284,"word":"receive"},{"id":285,"word":"recommend"},{"id":286,"word":"rectangular"},{"id":287,"word":"relationship"},{"id":288,"word":"rescue"},{"id":289,"word":"roboticist"},{"id":290,"word":"specific"},{"id":291,"word":"stubborn"},{"id":292,"word":"syllable"},{"id":293,"word":"technology"},{"id":294,"word":"temperature"},{"id":295,"word":"theory"},{"id":296,"word":"traditional"},{"id":297,"word":"underneath"},{"id":298,"word":"vertical"},{"id":299,"word":"analysis"},{"id":300,"word":"mediterranean"}],"6":[{"id":1,"word":"adviser"},{"id":2,"word":"afford"},{"id":3,"word":"affordable"},{"id":4,"word":"agreement"},{"id":5,"word":"aimlessly"},{"id":6,"word":"amazement"},{"id":7,"word":"ancestor"},{"id":8,"word":"ancient"},{"id":9,"word":"appeal"},{"id":10,"word":"approval"},{"id":11,"word":"argument"},{"id":12,"word":"around"},{"id":13,"word":"assemble"},{"id":14,"word":"asteroid"},{"id":15,"word":"astronaut"},{"id":16,"word":"athlete"},{"id":17,"word":"aware"},{"id":18,"word":"baton"},{"id":19,"word":"beautiful"},{"id":20,"word":"belief"},{"id":21,"word":"benefit"},{"id":22,"word":"binge"},{"id":23,"word":"board"},{"id":24,"word":"brand"},{"id":25,"word":"bravery"},{"id":26,"word":"breakthrough"},{"id":27,"word":"cactus"},{"id":28,"word":"campaign"},{"id":29,"word":"canyon"},{"id":30,"word":"capital"},{"id":31,"word":"carnival"},{"id":32,"word":"cavernous"},{"id":33,"word":"chain"},{"id":34,"word":"chamber"},{"id":35,"word":"chemical"},{"id":36,"word":"chestnut"},{"id":37,"word":"circular"},{"id":38,"word":"clever"},{"id":39,"word":"cliff"},{"id":40,"word":"clue"},{"id":41,"word":"college"},{"id":42,"word":"communication"},{"id":43,"word":"competitor"},{"id":44,"word":"composting"},{"id":45,"word":"comprehension"},{"id":46,"word":"conduct"},{"id":47,"word":"confront"},{"id":48,"word":"container"},{"id":49,"word":"content"},{"id":50,"word":"conversation"},{"id":51,"word":"cradle"},{"id":52,"word":"creature"},{"id":53,"word":"cyclist"},{"id":54,"word":"dawn"},{"id":55,"word":"dedication"},{"id":56,"word":"departure"},{"id":57,"word":"description"},{"id":58,"word":"determined"},{"id":59,"word":"diabetes"},{"id":60,"word":"disappear"},{"id":61,"word":"disappointment"},{"id":62,"word":"disbelief"},{"id":63,"word":"discourage"},{"id":64,"word":"discuss"},{"id":65,"word":"documentary"},{"id":66,"word":"dusk"},{"id":67,"word":"ecology"},{"id":68,"word":"emission"},{"id":69,"word":"enormous"},{"id":70,"word":"episode"},{"id":71,"word":"equipment"},{"id":72,"word":"esteem"},{"id":73,"word":"evidence"},{"id":74,"word":"excavation"},{"id":75,"word":"excitement"},{"id":76,"word":"experienced"},{"id":77,"word":"explore"},{"id":78,"word":"extreme"},{"id":79,"word":"faint"},{"id":80,"word":"fairytale"},{"id":81,"word":"fascinating"},{"id":82,"word":"fictional"},{"id":83,"word":"fierce"},{"id":84,"word":"fiery"},{"id":85,"word":"financial"},{"id":86,"word":"fossil"},{"id":87,"word":"fountain"},{"id":88,"word":"galaxy"},{"id":89,"word":"generator"},{"id":90,"word":"gentle"},{"id":91,"word":"geology"},{"id":92,"word":"grateful"},{"id":93,"word":"gravity"},{"id":94,"word":"health"},{"id":95,"word":"horizon"},{"id":96,"word":"hormone"},{"id":97,"word":"identity"},{"id":98,"word":"idiom"},{"id":99,"word":"illustration"},{"id":100,"word":"improvement"},{"id":101,"word":"informative"},{"id":102,"word":"intelligent"},{"id":103,"word":"interstellar"},{"id":104,"word":"inventor"},{"id":105,"word":"journey"},{"id":106,"word":"labor"},{"id":107,"word":"loneliness"},{"id":108,"word":"luxury"},{"id":109,"word":"lyrics"},{"id":110,"word":"mammal"},{"id":111,"word":"manage"},{"id":112,"word":"mansion"},{"id":113,"word":"microbe"},{"id":114,"word":"miserable"},{"id":115,"word":"muscle"},{"id":116,"word":"musician"},{"id":117,"word":"narrative"},{"id":118,"word":"neighborhood"},{"id":119,"word":"nervous"},{"id":120,"word":"noisily"},{"id":121,"word":"olympic"},{"id":122,"word":"packaging"},{"id":123,"word":"parade"},{"id":124,"word":"paragliding"},{"id":125,"word":"participant"},{"id":126,"word":"passenger"},{"id":127,"word":"penalty"},{"id":128,"word":"percent"},{"id":129,"word":"performer"},{"id":130,"word":"permission"},{"id":131,"word":"persist"},{"id":132,"word":"phoenix"},{"id":133,"word":"photography"},{"id":134,"word":"physical"},{"id":135,"word":"politeness"},{"id":136,"word":"portion"},{"id":137,"word":"positive"},{"id":138,"word":"prediction"},{"id":139,"word":"preference"},{"id":140,"word":"previous"},{"id":141,"word":"project"},{"id":142,"word":"propose"},{"id":143,"word":"punctuation"},{"id":144,"word":"rainforest"},{"id":145,"word":"rapids"},{"id":146,"word":"realistic"},{"id":147,"word":"receipt"},{"id":148,"word":"recommendation"},{"id":149,"word":"regularly"},{"id":150,"word":"remains"},{"id":151,"word":"research"},{"id":152,"word":"reward"},{"id":153,"word":"rough"},{"id":154,"word":"scene"},{"id":155,"word":"scent"},{"id":156,"word":"schedule"},{"id":157,"word":"second"},{"id":158,"word":"series"},{"id":159,"word":"service"},{"id":160,"word":"sightsee"},{"id":161,"word":"situation"},{"id":162,"word":"skeleton"},{"id":163,"word":"sneakers"},{"id":164,"word":"social"},{"id":165,"word":"spacecraft"},{"id":166,"word":"special"},{"id":167,"word":"spoil"},{"id":168,"word":"squeeze"},{"id":169,"word":"stationary"},{"id":170,"word":"strain"},{"id":171,"word":"stressful"},{"id":172,"word":"successful"},{"id":173,"word":"summarize"},{"id":174,"word":"surface"},{"id":175,"word":"survival"},{"id":176,"word":"suspended"},{"id":177,"word":"suspicion"},{"id":178,"word":"sustainable"},{"id":179,"word":"swimsuit"},{"id":180,"word":"talent"},{"id":181,"word":"tame"},{"id":182,"word":"telescope"},{"id":183,"word":"thoughtfully"},{"id":184,"word":"throw"},{"id":185,"word":"toughest"},{"id":186,"word":"toward"},{"id":187,"word":"townspeople"},{"id":188,"word":"tradition"},{"id":189,"word":"traveler"},{"id":190,"word":"unbelievable"},{"id":191,"word":"universe"},{"id":192,"word":"unusual"},{"id":193,"word":"vanilla"},{"id":194,"word":"viewer"},{"id":195,"word":"visual"},{"id":196,"word":"volcano"},{"id":197,"word":"volunteer"},{"id":198,"word":"wealthy"},{"id":199,"word":"weightless"},{"id":200,"word":"zoology"},{"id":201,"word":"adrenaline"},{"id":202,"word":"advertisement"},{"id":203,"word":"advocate"},{"id":204,"word":"allegory"},{"id":205,"word":"amazement"},{"id":206,"word":"ancient"},{"id":207,"word":"anthropologist"},{"id":208,"word":"appetizer"},{"id":209,"word":"archaeologist"},{"id":210,"word":"archaeology"},{"id":211,"word":"artificial"},{"id":212,"word":"astrobiology"},{"id":213,"word":"astronaut"},{"id":214,"word":"astronomical"},{"id":215,"word":"atmosphere"},{"id":216,"word":"available"},{"id":217,"word":"awe"},{"id":218,"word":"cardiovascular"},{"id":219,"word":"cemetery"},{"id":220,"word":"circadian"},{"id":221,"word":"commitment"},{"id":222,"word":"committee"},{"id":223,"word":"congratulations"},{"id":224,"word":"cuisine"},{"id":225,"word":"cyclical"},{"id":226,"word":"decrease"},{"id":227,"word":"deforestation"},{"id":228,"word":"descriptive"},{"id":229,"word":"detectorist"},{"id":230,"word":"difficulty"},{"id":231,"word":"disadvantage"},{"id":232,"word":"disagreement"},{"id":233,"word":"disposable"},{"id":234,"word":"dispute"},{"id":235,"word":"dopamine"},{"id":236,"word":"drowsy"},{"id":237,"word":"dyslexia"},{"id":238,"word":"electricity"},{"id":239,"word":"element"},{"id":240,"word":"empathy"},{"id":241,"word":"encounter"},{"id":242,"word":"entertainment"},{"id":243,"word":"entrepreneur"},{"id":244,"word":"environment"},{"id":245,"word":"exercise"},{"id":246,"word":"expedition"},{"id":247,"word":"explanatory"},{"id":248,"word":"galactic"},{"id":249,"word":"genre"},{"id":250,"word":"gerbil"},{"id":251,"word":"historian"},{"id":252,"word":"hoax"},{"id":253,"word":"holographic"},{"id":254,"word":"hostel"},{"id":255,"word":"influence"},{"id":256,"word":"infographic"},{"id":257,"word":"information"},{"id":258,"word":"insomnia"},{"id":259,"word":"inspiration"},{"id":260,"word":"international"},{"id":261,"word":"literacy"},{"id":262,"word":"melatonin"},{"id":263,"word":"microadventure"},{"id":264,"word":"misspelled"},{"id":265,"word":"neurodiversity"},{"id":266,"word":"nonprofit"},{"id":267,"word":"occasionally"},{"id":268,"word":"onomatopoeia"},{"id":269,"word":"organization"},{"id":270,"word":"perseverance"},{"id":271,"word":"persuasive"},{"id":272,"word":"pesticide"},{"id":273,"word":"philosopher"},{"id":274,"word":"possession"},{"id":275,"word":"possibility"},{"id":276,"word":"preparation"},{"id":277,"word":"purpose"},{"id":278,"word":"recipe"},{"id":279,"word":"rectangular"},{"id":280,"word":"refrigerator"},{"id":281,"word":"rephrase"},{"id":282,"word":"responsible"},{"id":283,"word":"rhetorical"},{"id":284,"word":"rhythm"},{"id":285,"word":"rivalry"},{"id":286,"word":"savory"},{"id":287,"word":"sequence"},{"id":288,"word":"sesame"},{"id":289,"word":"simile"},{"id":290,"word":"sizzle"},{"id":291,"word":"souvenir"},{"id":292,"word":"spectacular"},{"id":293,"word":"speculation"},{"id":294,"word":"stalactite"},{"id":295,"word":"statistic"},{"id":296,"word":"submersible"},{"id":297,"word":"tardigrade"},{"id":298,"word":"tarsier"},{"id":299,"word":"technology"},{"id":300,"word":"temperature"}]};
+let grade='4';
+const $=s=>document.querySelector(s);
+const tabs=[...document.querySelectorAll('.tab')];
+const gradeBtns=[...document.querySelectorAll('.grade-btn')];
+const E={level:$('#level'),progress:$('#progress'),bar:$('#bar'),prompt:$('#prompt'),count:$('#count'),word:$('#word'),
+spelling:$('#spelling'),answer:$('#answer'),result:$('#result'),hint:$('#hint'),listen:$('#listen'),spellBtn:$('#spellBtn'),
+check:$('#check'),next:$('#next'),prev:$('#prev'),playPause:$('#playPause'),nextPlayer:$('#nextPlayer'),repeatOne:$('#repeatOne'),range:$('#range'),countSel:$('#countSel'),voice:$('#voice'),rate:$('#rate'),
+randomVoice:$('#randomVoice'),shuffle:$('#shuffle'),autoPlay:$('#autoPlay'),restart:$('#restart'),score:$('#score'),acc:$('#acc')};
+let mode='listenSpell',queue=[],idx=0,correct=0,attempts=0,voices=[],timer=null,locked=false,isPaused=false,isPlaying=false,repeatCurrent=false,playToken=0;
+
+function shuffle(a){for(let i=a.length-1;i;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function current(){return queue[idx]}
+function loadVoices(){voices=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));E.voice.innerHTML=voices.length?voices.map((v,i)=>`<option value="${i}">${v.name} · ${v.lang}</option>`).join(''):'<option>기본 영어 음성</option>'}
+speechSynthesis.onvoiceschanged=loadVoices;loadVoices();
+function voice(){if(!voices.length)return null;return E.randomVoice.checked?voices[Math.floor(Math.random()*voices.length)]:voices[+E.voice.value||0]}
+function say(text,rate=Number(E.rate.value),onend=null){
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='en-US';u.voice=voice();u.rate=rate;
+  if(onend)u.onend=onend;
+  speechSynthesis.speak(u);
+}
+function spellText(w){return w.toUpperCase().split('').join(', ')}
+function speakWord(){say(current().word)}
+function speakSpelling(){say(spellText(current().word),.68);E.spelling.textContent=current().word.toUpperCase().split('').join(' · ');E.spelling.classList.remove('hidden')}
+
+
+function setPlayLabel(){
+  E.playPause.textContent=isPaused?'▶️ 계속':(isPlaying?'⏸ 일시정지':'▶️ 재생');
+}
+function stopPlayback(){
+  playToken++;
+  speechSynthesis.cancel();
+  clearInterval(timer);
+  isPlaying=false;isPaused=false;
+  setPlayLabel();
+}
+function pausePlayback(){
+  if(!isPlaying)return;
+  if(speechSynthesis.speaking&&!speechSynthesis.paused){speechSynthesis.pause();isPaused=true}
+  else if(speechSynthesis.paused){speechSynthesis.resume();isPaused=false}
+  setPlayLabel();
+}
+function goPrev(){
+  stopPlayback();
+  idx=idx>0?idx-1:queue.length-1;
+  render();
+}
+function goNextManual(){
+  stopPlayback();
+  idx=idx<queue.length-1?idx+1:0;
+  render();
+}
+
+function build(){
+ stopPlayback();let [a,b]=E.range.value.split('-').map(Number);
+ let arr=DATA[grade].filter(x=>x.id>=a&&x.id<=b);if(E.shuffle.checked)shuffle(arr);
+ queue=arr.slice(0,Math.min(+E.countSel.value,arr.length));idx=0;correct=0;attempts=0;render();stats();
+}
+function render(){
+ clearInterval(timer);speechSynthesis.cancel();locked=false;isPaused=false;isPlaying=false;setPlayLabel();const w=current();if(!w)return finish();
+ E.level.textContent=`${grade}학년 · `+(w.id>=201?'CHALLENGE WORD':'BASIC WORD');E.progress.textContent=`${idx+1} / ${queue.length}`;E.bar.style.width=`${idx/queue.length*100}%`;
+ E.count.classList.add('hidden');E.spelling.classList.add('hidden');E.answer.classList.add('hidden');E.check.classList.add('hidden');E.next.classList.toggle('hidden',E.autoPlay.checked && mode!=='typing');
+ E.result.textContent='';E.answer.value='';E.word.classList.remove('hidden');
+ if(mode==='listenSpell'){
+   E.prompt.textContent='단어를 듣고, 이어서 스펠링을 들어요.';
+   E.word.textContent=w.word;E.hint.textContent='선택한 단어 수만큼 자동 재생됩니다. 재생·일시정지·이전·다음·반복 버튼도 사용할 수 있어요.';
+   {
+   const token=++playToken;
+   isPlaying=true;setPlayLabel();
+   setTimeout(()=>{
+     if(token!==playToken)return;
+     say(w.word,Number(E.rate.value),()=>setTimeout(()=>{
+       if(token!==playToken)return;
+       E.spelling.textContent=w.word.toUpperCase().split('').join(' · ');
+       E.spelling.classList.remove('hidden');
+       say(spellText(w.word),.68,()=>{
+         if(token!==playToken)return;
+         isPlaying=false;setPlayLabel();
+         if(repeatCurrent){setTimeout(()=>render(),900)}
+         else if(E.autoPlay.checked){setTimeout(()=>next(),900)}
+       });
+     },350));
+   },250);
+ }
+ }else if(mode==='delayReveal'){
+   E.prompt.textContent='단어를 듣고 6초 동안 스펠링을 생각해 보세요.';
+   E.word.textContent='LISTEN!';E.hint.textContent='6초 뒤 정답이 나타나고 자동으로 다음 단어로 넘어갑니다.';
+   E.count.textContent='6';E.count.classList.remove('hidden');speakWord();let n=6;
+   {
+   const token=++playToken;
+   isPlaying=true;setPlayLabel();
+   timer=setInterval(()=>{n--;E.count.textContent=n;if(n<=0){
+     clearInterval(timer);
+     if(token!==playToken)return;
+     E.count.classList.add('hidden');E.word.textContent=w.word;
+     E.spelling.textContent=w.word.toUpperCase().split('').join(' · ');
+     E.spelling.classList.remove('hidden');
+     say(`The answer is ${w.word}. ${spellText(w.word)}`,.72,()=>{
+       if(token!==playToken)return;
+       isPlaying=false;setPlayLabel();
+       if(repeatCurrent){setTimeout(()=>render(),900)}
+       else if(E.autoPlay.checked)setTimeout(()=>next(),900);
+     })
+   }},1000);
+ }
+ }else{
+   E.prompt.textContent='단어를 듣고 정답을 타이핑하세요.';
+   E.word.textContent='🐝';E.hint.textContent='입력 후 Enter 또는 정답 확인 버튼을 누르세요.';
+   E.answer.classList.remove('hidden');E.check.classList.remove('hidden');E.next.classList.add('hidden');
+   setTimeout(()=>{speakWord();E.answer.focus()},250);
+ }
+}
+function check(){
+ if(locked)return;locked=true;attempts++;const ok=E.answer.value.trim().toLowerCase()===current().word;
+ if(ok){correct++;E.result.textContent='✅ Correct!';say('Correct!',1.05)}else{E.result.textContent=`❌ ${current().word.toUpperCase()}`;say(`The answer is ${current().word}. ${spellText(current().word)}`,.72)}
+ stats();setTimeout(next,1400);
+}
+function next(){if(idx<queue.length-1){idx++;render()}else finish()}
+function finish(){stopPlayback();E.bar.style.width='100%';E.prompt.textContent='훈련 완료!';E.word.textContent=`${correct} / ${queue.length}`;E.spelling.classList.add('hidden');E.answer.classList.add('hidden');E.check.classList.add('hidden');E.next.classList.add('hidden');E.count.classList.add('hidden');E.hint.textContent='새 훈련 시작을 눌러 다시 연습하세요.'}
+function stats(){E.score.textContent=correct;E.acc.textContent=attempts?Math.round(correct/attempts*100)+'%':'0%'}
+
+function applyGrade(g){
+  stopPlayback();
+  grade=g;
+  gradeBtns.forEach(b=>b.classList.toggle('active',b.dataset.grade===g));
+  document.querySelector('#gradeTitle').textContent=g+'학년';
+  const root=document.documentElement;
+  if(g==='4'){
+    root.style.setProperty('--grade','#e7b600');
+    root.style.setProperty('--y','#ffd84d');
+    root.style.setProperty('--b','#dca900');
+    root.style.setProperty('--bg1','#fff9dc');
+    root.style.setProperty('--bg2','#fffdf2');
+  }else if(g==='5'){
+    root.style.setProperty('--grade','#379edc');
+    root.style.setProperty('--y','#9edcff');
+    root.style.setProperty('--b','#278fd8');
+    root.style.setProperty('--bg1','#e9f8ff');
+    root.style.setProperty('--bg2','#f7fcff');
+  }else{
+    root.style.setProperty('--grade','#8557d8');
+    root.style.setProperty('--y','#c9afff');
+    root.style.setProperty('--b','#7547c7');
+    root.style.setProperty('--bg1','#f2eaff');
+    root.style.setProperty('--bg2','#fcf9ff');
+  }
+  build();
+}
+gradeBtns.forEach(b=>b.onclick=()=>applyGrade(b.dataset.grade));
+
+tabs.forEach(t=>t.onclick=()=>{stopPlayback();tabs.forEach(x=>x.classList.remove('active'));t.classList.add('active');mode=t.dataset.mode;build()});
+E.listen.onclick=()=>{stopPlayback();speakWord()};
+E.spellBtn.onclick=()=>{stopPlayback();speakSpelling()};
+E.check.onclick=check;E.next.onclick=next;E.restart.onclick=build;
+E.prev.onclick=goPrev;E.nextPlayer.onclick=goNextManual;
+E.playPause.onclick=()=>{
+  if(isPlaying){pausePlayback()}
+  else{stopPlayback();render()}
+};
+E.repeatOne.onclick=()=>{
+  repeatCurrent=!repeatCurrent;
+  E.repeatOne.textContent=repeatCurrent?'🔁 반복 ON':'🔁 반복';
+  E.repeatOne.classList.toggle('blue',repeatCurrent);
+};
+E.answer.addEventListener('keydown',e=>{if(e.key==='Enter')check()});applyGrade('4');
+</script>
+</body></html>
